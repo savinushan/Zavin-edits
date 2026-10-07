@@ -1,0 +1,42 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin | Zavin Edits</title><meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css"></head><body>
+<nav><div class="wrap"><a class="logo" href="/">Zavin<i>.</i>Edits</a><button class="btn ghost" id="out" hidden>Log out</button></div></nav>
+<main class="wrap" style="padding-top:40px">
+<div class="box" id="login"><h2 style="font-size:32px">Admin login</h2>
+<label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password">
+<p style="margin-top:16px"><button class="btn" id="go">Log in</button></p><p class="msg err" id="lerr"></p></div>
+<div id="panel" hidden>
+<div class="box"><h2 style="font-size:32px">Upload a video</h2>
+<label for="title">Title</label><input id="title" maxlength="80">
+<label for="cat">Category</label><input id="cat" list="cl" placeholder="Reels, Vlog, Promo…" maxlength="30"><datalist id="cl"><option>Reels</option><option>Vlog</option><option>Promo</option><option>YouTube</option></datalist>
+<label for="desc">Short description</label><textarea id="desc" rows="2" maxlength="300"></textarea>
+<label for="file">Video file</label><input id="file" type="file" accept="video/*">
+<div class="bar" id="bar"><i></i></div>
+<p style="margin-top:16px"><button class="btn" id="up">Publish video</button></p><p class="msg" id="umsg"></p></div>
+<div class="box" style="max-width:720px"><h2 style="font-size:28px">Published videos</h2><div id="list"></div></div>
+</div></main>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const show=a=>{$('login').hidden=a;$('panel').hidden=!a;$('out').hidden=!a;if(a)load()};
+fetch('/api/me').then(r=>r.json()).then(d=>show(d.admin));
+async function login(){const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})});
+  if(r.ok){$('pw').value='';show(true)}else $('lerr').textContent=(await r.json()).error}
+$('go').onclick=login;$('pw').onkeydown=e=>{if(e.key==='Enter')login()};
+$('out').onclick=async()=>{await fetch('/api/logout',{method:'POST'});show(false)};
+async function load(){const v=await (await fetch('/api/videos')).json();
+  $('list').innerHTML=v.length?v.map(x=>`<div class="row"><div><b>${esc(x.title)}</b><br><small style="color:var(--mute)">${esc(x.category)}</small></div><button class="del" data-id="${x.id}">Delete</button></div>`).join(''):'<p class="empty">No videos yet. Upload your first one.</p>'}
+$('list').onclick=async e=>{const id=e.target.dataset.id;if(id&&confirm('Delete this video?')){await fetch('/api/videos/'+id,{method:'DELETE'});load()}};
+$('up').onclick=()=>{
+  const f=$('file').files[0],m=$('umsg');m.className='msg';
+  if(!f){m.textContent='Choose a video file first.';m.classList.add('err');return}
+  const fd=new FormData();fd.append('title',$('title').value);fd.append('category',$('cat').value);fd.append('description',$('desc').value);fd.append('video',f);
+  const x=new XMLHttpRequest();x.open('POST','/api/videos');$('bar').style.display='block';$('up').disabled=true;
+  x.upload.onprogress=e=>{$('bar').firstChild.style.width=(e.loaded/e.total*100)+'%'};
+  x.onload=()=>{$('up').disabled=false;$('bar').style.display='none';
+    if(x.status===200){m.textContent='Published.';m.classList.add('ok');['title','cat','desc','file'].forEach(i=>$(i).value='');load()}
+    else{m.textContent=(JSON.parse(x.responseText||'{}').error)||'Upload failed.';m.classList.add('err')}};
+  x.onerror=()=>{$('up').disabled=false;m.textContent='Network error.';m.classList.add('err')};x.send(fd)};
+</script></body></html>
