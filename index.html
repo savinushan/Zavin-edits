@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zavin Edits | Video Editor Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css"><script src="config.js"></script></head><body>
+<nav><div class="wrap"><a class="logo" href="#top">Zavin<i>.</i>Edits</a><div><a class="l" href="#work">Work</a><a class="l" href="#about">About</a><a class="l" href="#contact">Contact</a></div></div></nav>
+<header class="hero" id="top"><div class="wrap">
+<h1 id="name"></h1><p id="tag"></p>
+<a class="btn" href="#work">Watch my work</a> <a class="btn ghost" href="#contact">Hire me</a>
+<div class="timeline" aria-hidden="true"><span class="a"></span><span class="b"></span><span class="c"></span><span class="d"></span><span class="e"></span></div>
+</div></header>
+<section id="work"><div class="wrap"><h2>Work</h2><div class="chips" id="chips"></div><div class="grid" id="grid"></div></div></section>
+<section id="about"><div class="wrap about"><div><h2>About</h2><p id="about"></p></div><ul class="skills" id="skills"></ul></div></section>
+<section id="contact"><div class="wrap"><h2>Let’s work together</h2><p style="margin-bottom:20px;color:var(--mute)">Have footage that needs a cut? Message me.</p><a class="btn" id="mail">Send an email</a> <a class="btn ghost" id="ig" target="_blank" rel="noopener">Instagram</a></div></section>
+<footer><div class="wrap">© <span id="yr"></span> <span id="fn"></span></div></footer>
+<dialog id="dlg"><button class="x" aria-label="Close">✕</button><div id="pl"></div><div class="i"><h3 id="dt"></h3><p id="dd" style="opacity:.75"></p></div></dialog>
+<script>
+const S=window.SITE,$=id=>document.getElementById(id);
+$('name').textContent=S.name;$('tag').textContent=S.tagline;$('about').textContent=S.about;$('fn').textContent=S.name;$('yr').textContent=new Date().getFullYear();
+$('skills').innerHTML=S.skills.map(s=>`<li>${s}</li>`).join('');
+$('mail').href='mailto:'+S.email;$('ig').href=S.instagram;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let vids=[],cat='All';
+function draw(){
+  const cats=['All',...new Set(vids.map(v=>v.category))];
+  $('chips').innerHTML=vids.length?cats.map(c=>`<button class="chip" aria-pressed="${c===cat}" data-c="${esc(c)}">${esc(c)}</button>`).join(''):'';
+  const list=vids.filter(v=>cat==='All'||v.category===cat);
+  $('grid').innerHTML=list.length?list.map((v,i)=>`<button class="card" data-id="${i}"><div class="thumb">${v.youtube?`<img loading="lazy" alt="" src="https://img.youtube.com/vi/${esc(v.youtube)}/hqdefault.jpg">`:`<video src="${esc(v.file)}#t=0.5" preload="metadata" muted></video>`}<b>${esc(v.category)}</b></div><div class="t"><h3>${esc(v.title)}</h3><small>${new Date(v.date).toLocaleDateString()}</small></div></button>`).join(''):'<div class="empty">New work is on the way. Check back soon.</div>';
+}
+$('chips').onclick=e=>{const c=e.target.dataset.c;if(c){cat=c;draw()}};
+const dlg=$('dlg'),pl=$('pl');
+$('grid').onclick=e=>{const c=e.target.closest('.card');if(!c)return;const v=vids.filter(x=>cat==='All'||x.category===cat)[+c.dataset.id];
+  pl.innerHTML=v.youtube?`<iframe src="https://www.youtube-nocookie.com/embed/${esc(v.youtube)}?autoplay=1&rel=0" allow="autoplay;fullscreen" allowfullscreen></iframe>`:`<video controls autoplay playsinline src="${esc(v.file)}"></video>`;
+  $('dt').textContent=v.title;$('dd').textContent=v.description||'';dlg.showModal()};
+const close=()=>{pl.innerHTML='';dlg.close()};
+dlg.querySelector('.x').onclick=close;dlg.onclick=e=>{if(e.target===dlg)close()};dlg.onclose=()=>{pl.innerHTML=''};
+fetch('videos.json').then(r=>r.json()).then(d=>{vids=d.slice().reverse();draw()}).catch(()=>draw());
+</script></body></html>
